@@ -4,15 +4,15 @@ title: Main function
 
 import Code from "@astrojs/starlight/components";
 
-import CWG from "@components/CWG.astro";
 import DeclDoc from "@components/DeclDoc.astro";
+import DR from "@components/DR.astro";
 import Missing from "@components/Missing.astro";
 import {
   default as ParamDocList,
   ParamDoc
 } from "@components/ParamDocList.astro"
 import Revision from "@components/Revision.astro";
-import WG21Paper from "@components/WG21Paper.astro";
+import WG21PaperLink from "@components/WG21PaperLink.astro";
 
 A program shall contain a global namespace function named `main`, which is the designated start of the program in hosted environment. It shall have one of the following forms:
 
@@ -143,9 +143,38 @@ argv[3] == 0
 
 The following behavior-changing defect reports were applied retroactively to previously published C++ standards.
 
-| DR | Applied to | Behavior as published | Correct behavior |
-|----|------------|-----------------------|------------------|
-| <CWG id={1003} /> | C++98 | supported parameter names of `main` were overly restricted | all valid parameter names are supported |
-| <CWG id={1886} /> | C++98 | the `main` function could be declared with a language linkage | prohibited |
-| <CWG id={2479} /> | C++20 | the `main` function could be declared `consteval` | prohibited |
-| <CWG id={2811} /> | C++98 | whether the `main` function is used after <WG21Paper paper="N3214" /> was unclear | it is considered used when named |
+<DR kind="cwg" id={1003} std="C++98">
+  <Fragment slot="behavior-published">
+    supported parameter names of `main` were overly restricted
+  </Fragment>
+  <Fragment slot="correct-behavior">
+    all valid parameter names are supported
+  </Fragment>
+</DR>
+
+<DR kind="cwg" id={1886} std="C++98">
+  <Fragment slot="behavior-published">
+    the `main` function could be declared with a language linkage
+  </Fragment>
+  <Fragment slot="correct-behavior">
+    prohibited
+  </Fragment>
+</DR>
+
+<DR kind="cwg" id={2479} std="C++20">
+  <Fragment slot="behavior-published">
+    the `main` function could be declared `consteval`
+  </Fragment>
+  <Fragment slot="correct-behavior">
+    prohibited
+  </Fragment>
+</DR>
+
+<DR kind="cwg" id={2811} std="C++98">
+  <Fragment slot="behavior-published">
+    whether the `main` function is used after <WG21PaperLink paper="N3214" /> was unclear
+  </Fragment>
+  <Fragment slot="correct-behavior">
+    it is considered used when named
+  </Fragment>
+</DR>

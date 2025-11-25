@@ -1,0 +1,60 @@
+---
+import type { CxxRevision } from "@src/types";
+
+interface TraitSince {
+  trait: string;
+  since: CxxRevision;
+}
+
+interface Props {
+  since?: CxxRevision;
+  traits?: TraitSince[];
+  until?: CxxRevision;
+  removed?: CxxRevision;
+}
+
+const { since, traits, until, removed } = Astro.props;
+---
+
+<div class="revision">
+  <div class="revision-content">
+    <slot />
+  </div>
+  <div class="revision-tags">
+    {since && <div class="revision-tag"> (since {since})</div>}
+    {traits?.map(({ trait, since }) => (
+      <div class="revision-tag"> ({trait} in {since})</div>
+    ))}
+    {until && <div class="revision-tag"> (until {until})</div>}
+    {removed && <div class="revision-tag"> (removed in {removed})</div>}
+  </div>
+</div>
+
+<style>
+  .revision {
+    border: 1px solid var(--sl-color-gray-4);
+    padding-left: calc(var(--sl-content-gap-y) * 0.5);
+    padding-right: calc(var(--sl-content-gap-y) * 0.5);
+    padding-top: calc(var(--sl-content-gap-y) * 0.25);
+    padding-bottom: calc(var(--sl-content-gap-y) * 0.25);
+    display: flex;
+    align-items: center;
+    column-gap: 1em;
+  }
+
+  .revision > .revision-content {
+    flex-grow: 1;
+  }
+
+  .revision > .revision-tags {
+    flex-shrink: 0;
+    flex-grow: 0;
+    margin-top: 0;
+  }
+
+  .revision .revision-tag {
+    font-size: var(--cppdoc-font-size-revision);
+    color: var(--cppdoc-color-revision);
+    margin: 0;
+  }
+</style>

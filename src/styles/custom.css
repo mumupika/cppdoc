@@ -1,8 +1,21 @@
-code {
+:root {
+  --cppdoc-color-revision: var(--sl-color-green);
+  --cppdoc-font-size-revision: 0.8em;
+
+  --cppdoc-color-missing-link: #cc6633;
+  --cppdoc-color-well-def: var(--sl-color-green);
+  --cppdoc-color-impl-def: var(--sl-color-blue);
+  --cppdoc-color-unspec: var(--sl-color-orange);
+  --cppdoc-color-undef: var(--sl-color-red);
+  --cppdoc-color-ill-formed: var(--sl-color-red);
+  --cppdoc-color-ifndr: var(--sl-color-red);
+}
+
+.sl-markdown-content code {
   font-size: 0.85em;
   border-radius: 2px;
 }
 
-pre > code {
+.sl-markdown-content pre > code {
   font-size: 1em;
 }

@@ -1,3 +1,7 @@
+:root[data-theme="light"] {
+  --sl-color-green: hsl(var(--sl-hue-green) 50% 40%);
+}
+
 :root {
   --cppdoc-color-revision: var(--sl-color-green);
   --cppdoc-font-size-revision: 0.8em;

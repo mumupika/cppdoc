@@ -1,3 +1,5 @@
+export type Language = "C" | "C++";
+
 export type CppRevision =
   | "C++98"
   | "C++11"

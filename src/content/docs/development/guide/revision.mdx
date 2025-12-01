@@ -15,7 +15,7 @@ CppDoc hosts documentation for all historic revisions of the C and C++ programmi
 
 The `Revision` component renders to an inline-level `<span>` that contains revision-specific content.
 
-```mdx
+```mdx {4}
 import { Revision } from "@components/revision";
 
 Some words here.
@@ -29,7 +29,7 @@ Some more words here.
 
 The `until` attribute specifies the revision from which the content is removed from the language standard:
 
-```mdx
+```mdx {4}
 import { Revision } from "@components/revision";
 
 Some words here.
@@ -43,7 +43,7 @@ Some more words here.
 
 You can specify `since` and `until` attributes simultaneously for content that applies to a range of revisions:
 
-```mdx
+```mdx {4}
 import { Revision } from "@components/revision";
 
 Some words here.
@@ -57,7 +57,7 @@ Some more words here.
 
 In some context, it may be more fluent to use "removed" rather than "until". You can achieve this by changing the `until` attribute to `removed`:
 
-```mdx
+```mdx {4}
 import { Revision } from "@components/revision";
 
 Some words here.
@@ -73,7 +73,7 @@ Some more words here.
 
 Some content may have _traits_ since a specific revision. For example, a wording may be depracated since a specific revision. Here, "deprecated" is a trait. You can specify arbitrary numbers of traits to the `Revision` component:
 
-```mdx
+```mdx {4-9}
 import { Revision } from "@components/revision";
 
 Some words here.
@@ -92,9 +92,11 @@ Some more words here.
 
 ## Revision-Specific Blocks
 
-The `RevisionBlock` component renders to a block-level `<div>` that contains revision-specific content. Its usage is exactly the same as the `Revision` component.
+### Basic Usage
 
-```mdx
+The `RevisionBlock` component renders to a block-level `<div>` that contains revision-specific content. Its basic usage is the same as the `Revision` component.
+
+```mdx {5-7,9-16}
 import { RevisionBlock } from "@components/revision";
 
 Some words in this paragraph.
@@ -134,6 +136,36 @@ Some more paragraphs.
   Some more paragraphs.
 </Card>
 
+### Vertical Layout
+
+By default, `RevisionBlock` has a left-to-right layout: the content sits at the left, and the revision information sits at the right. In addition, you can set the layout direction of `RevisionBlock` to top-to-bottom by setting the `dir` attribute to `v`:
+
+```mdx {2}
+<RevisionBlock
+  dir="v"
+  since="C++11"
+  traits={[{ trait: "deprecated", since: "C++20" }]}
+  removed="C++26"
+>
+  This paragraph is introduced in C++11, deprecated in C++20, and removed in
+  C++26.
+</RevisionBlock>
+```
+
+<Card title="Preview">
+  <RevisionBlock
+    dir="v"
+    since="C++11"
+    traits={[{ trait: "deprecated", since: "C++20" }]}
+    removed="C++26"
+  >
+    This paragraph is introduced in C++11, deprecated in C++20, and removed in
+    C++26.
+  </RevisionBlock>
+</Card>
+
+This layout is useful when embedding revision-related content into a [description list](./doc-everything#description-list).
+
 ## Revision-Specific Sections
 
 <Aside type="caution">
@@ -145,6 +177,23 @@ Some more paragraphs.
 CppDoc users could pin CppDoc content to a specific revision by selecting from the dropdown list above the table-of-contents area on each page. For example, if the user selects and pins its view to C++17, it will hide all content that does not apply to C++17.
 
 The `Revision` and the `RevisionBlock` components work out-of-the-box with this feature. Besides, you can opt-in to this feature for arbitrary HTML elements by attaching revision information to them.
+
+### Specifying revision info for pages
+
+Each page could advertise its applied revision through its frontmatter. The advertised revision range will be picked up by the revision selector on the page to show the user a list of applicable revisions it could pin to. For example, this frontmatter indicates the content in the page applies from C++11 to C++17:
+
+```mdx
+---
+title: My page
+cppdoc:
+  revision:
+    lang: C++
+    since: C++11
+    until: C++20
+---
+```
+
+Both of `since` and `until` are optional in the frontmatter.
 
 ### Attach revision info to arbitrary HTML elements
 
@@ -164,7 +213,7 @@ import { autoRev } from "@components/revision";
 
 ### Advanced usage
 
-In rare circumstances you may want to listen for revision changes and perform actions accordingly. This could be achieved by subscribing to the `selectedRevision` [nanostore](https://github.com/nanostores/nanostores) manually:
+In rare circumstances you may want to listen for revision changes and perform actions accordingly. This could be achieved by subscribing to the `selectedRevision` [nanostore](https://github.com/nanostores/nanostores) state:
 
 ```astro
 ---
@@ -179,6 +228,8 @@ In rare circumstances you may want to listen for revision changes and perform ac
 
   selectedRevision.subscribe((rev) => {
     // Do something with the currently selected revision `rev`.
+    // Note that `rev` would be `null` when the user does not pin its view to
+    // any specific revision.
   });
 </script>
 ```

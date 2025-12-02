@@ -1,3 +1,5 @@
+import { JSDOM } from "jsdom"
+
 interface GetTextOptions {
     treatBlockAsNewline?: boolean;
     collapseSpaces?: boolean;
@@ -13,15 +15,14 @@ const BLOCK_ELEMENTS = [
     'hr', 'br'
 ];
 
+const Node = new JSDOM('').window.Node;
 function isBlockElement(node: Node): boolean {
     if (node.nodeType !== Node.ELEMENT_NODE) return false;
     const element = node as HTMLElement;
 
-
     if (BLOCK_ELEMENTS.includes(element.tagName.toLowerCase())) {
         return true;
     }
-
 
     const style = window.getComputedStyle(element);
     return style.display === 'block' ||

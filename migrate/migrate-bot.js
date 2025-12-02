@@ -158,7 +158,7 @@ ${html}
   usedComponents.sort();
 
   if (usedComponents.length > 0) {
-    const importStatements = `import { ${usedComponents.join(', ')} } from '@/components/index';\n\n`;
+    const importStatements = `import { ${usedComponents.join(', ')} } from '@components/index';\n\n`;
     content = importStatements + content;
   }
 

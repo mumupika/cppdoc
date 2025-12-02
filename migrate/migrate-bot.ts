@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { Octokit } from "@octokit/rest";
 import { JSDOM } from "jsdom";
 import fs, { readFile } from "fs/promises";
@@ -25,14 +23,14 @@ if (!OPENROUTER_API_KEY) {
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
-async function retry(fn, retries = 3, delay = 1000) {
-  let lastError;
+async function retry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  let lastError: unknown;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      console.warn(`Attempt ${attempt} failed: ${error.message}`);
+      console.warn(`Attempt ${attempt} failed: ${error instanceof Error ? error.message : String(error)}`);
       if (attempt < retries) {
         await new Promise((res) => setTimeout(res, delay));
       }
@@ -41,17 +39,17 @@ async function retry(fn, retries = 3, delay = 1000) {
   throw lastError;
 }
 
-function extractLink(title) {
+function extractLink(title: string): string | null {
   const urlRegex = /https?:\/\/.*?cppreference\.com\/w\/[^\s]+/g;
   const match = title.match(urlRegex);
   return match ? match[0] : null;
 }
 
-function hasPRReference(title) {
+function hasPRReference(title: string): boolean {
   return /\[#\d+\]/.test(title);
 }
 
-async function fetchPageContent(url) {
+async function fetchPageContent(url: string): Promise<{ html: string; title: string; url: string }> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`);
@@ -70,7 +68,7 @@ async function fetchPageContent(url) {
   };
 }
 
-async function convertToMDX(html, title, url) {
+async function convertToMDX(html: string, title: string, url: string): Promise<string> {
   const prompt = (await readFile(__dirname + "/PROMPT.md", "utf8")).replace(
     "{{LLM_DOCS}}",
     await readFile(
@@ -116,7 +114,7 @@ ${html}
     throw new Error(`OpenRouter API error: ${error}`);
   }
 
-  const data = await response.json();
+  const data = await response.json() as { choices: Array<{ message: { content: string } }> };
   let content = data.choices[0].message.content.trim();
 
   console.log("Raw content:", content);
@@ -151,13 +149,13 @@ ${html}
   ];
 
   const usedComponents = components.filter(
-    (comp) => content.includes(`<${comp} `) || content.includes(`<${comp}>`),
+    (comp: string) => content.includes(`<${comp} `) || content.includes(`<${comp}>`),
   );
 
   // Remove all existing import statements
   content = content
     .split("\n")
-    .filter((line) => !line.startsWith("import "))
+    .filter((line: string) => !line.startsWith("import "))
     .join("\n");
 
   // Sort used components alphabetically
@@ -169,7 +167,7 @@ ${html}
   }
 
   // Verify content
-  let normalElements = [
+  const normalElements = [
     "<div",
     "<section",
     "<span",
@@ -179,10 +177,11 @@ ${html}
     "<tr",
     "<td",
     "<th",
-  ],
-    normalElementsCount = 0;
+  ];
+  let normalElementsCount = 0;
   for (const elem of normalElements) {
-    normalElementsCount += (content.match(new RegExp(elem, "g")) || []).length;
+    const matches = content.match(new RegExp(elem, "g"));
+    normalElementsCount += matches ? matches.length : 0;
   }
 
   console.log(`Normal HTML elements count: ${normalElementsCount}`);
@@ -195,7 +194,7 @@ ${html}
 }
 
 // https://cppreference.com/w/cpp/comments  => src/content/docs/cpp/comments.mdx
-function getRelativePath(url) {
+function getRelativePath(url: string): string {
   const match = url.match(/https?:\/\/.*?cppreference\.com\/w\/(.+)\.html$/);
   if (!match) {
     throw new Error(`无法从URL解析路径: ${url}`);
@@ -204,14 +203,14 @@ function getRelativePath(url) {
   return `src/content/docs/${relative}.mdx`;
 }
 
-function getLocalPath(url) {
+function getLocalPath(url: string): string {
   return path.join(
     __dirname,
     "..", getRelativePath(url)
   );
 }
 
-async function writeMDXFile(filePath, content, title) {
+async function writeMDXFile(filePath: string, content: string, title: string): Promise<void> {
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
   const frontmatter = `---
@@ -222,9 +221,11 @@ description: Auto‑generated from cppreference
   console.log(`写入 ${filePath}`);
 }
 
-async function createPullRequest(issue, filePath, url) {
+async function createPullRequest(issue: { number: number; title: string }, filePath: string, url: string): Promise<number> {
   const branchName = `migrate/${issue.number}-${Date.now().toString(36)}`;
-  const prTitle = `feat: migrate ${url.split("/w/").pop().replace(".html", "")} from cppref [#${issue.number}]`;
+  const page = url.split("/w/").pop();
+  const pageName = page ? page.replace(".html", "") : "unknown";
+  const prTitle = `feat: migrate ${pageName} from cppref [#${issue.number}]`;
   const commitMessage = prTitle;
   const prBody = `自动迁移自 ${url}
 
@@ -244,7 +245,7 @@ async function createPullRequest(issue, filePath, url) {
     execSync(`git commit -m "${commitMessage}"`);
     execSync(`git push origin ${branchName}`);
   } catch (error) {
-    console.error("Git操作失败:", error.message);
+    console.error("Git操作失败:", error instanceof Error ? error.message : String(error));
     throw error;
   }
 
@@ -261,7 +262,7 @@ async function createPullRequest(issue, filePath, url) {
   return pr.number;
 }
 
-async function updateIssue(issue, prNumber, error = null) {
+async function updateIssue(issue: { number: number; title: string }, prNumber: number | null, error: unknown = null): Promise<void> {
   const newTitle = `[#${prNumber}] ${issue.title.replace(/\[#\d+\]\s*/, "")}`;
   await octokit.issues.update({
     owner: REPO_OWNER,
@@ -271,11 +272,12 @@ async function updateIssue(issue, prNumber, error = null) {
   });
 
   if (error) {
+    const message = error instanceof Error ? error.message : String(error);
     await octokit.issues.createComment({
       owner: REPO_OWNER,
       repo: REPO_NAME,
       issue_number: issue.number,
-      body: `迁移失败: ${error.message}\n\n已关闭issue。`,
+      body: `迁移失败: ${message}\n\n已关闭issue。`,
     });
     await octokit.issues.update({
       owner: REPO_OWNER,

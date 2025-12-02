@@ -18,7 +18,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issues' &&
-        (github.event.action == 'opened' || github.event.action == 'labeled') &&
+        (github.event.action == 'labeled') &&
         contains(github.event.issue.labels.*.name, 'migrate-cppref-page'))
     permissions:
       contents: write

@@ -55,7 +55,7 @@ async function fetchPageContent(url) {
 }
 
 async function convertToMDX(html, title, url) {
-  const prompt = await readFile(__dirname + "/PROMPT.md", "utf8").replace(
+  const prompt = (await readFile(__dirname + "/PROMPT.md", "utf8")).replace(
     "{{LLM_DOCS}}",
     await readFile(
       __dirname +

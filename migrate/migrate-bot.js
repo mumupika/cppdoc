@@ -25,18 +25,22 @@ if (!OPENROUTER_API_KEY) {
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
-function retry(fn, retries = 3, delay = 1000) {
-  return fn().catch((err) => {
-    if (retries > 0) {
-      console.log(`Retrying... (${retries} retries left)`, err.message, err.stack);
-      return new Promise((resolve) =>
-        setTimeout(() => resolve(retry(fn, retries - 1, delay)), delay),
-      );
-    } else {
-      return Promise.reject(err);
+async function retry(fn, retries = 3, delay = 1000) {
+  let lastError;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      console.warn(`Attempt ${attempt} failed: ${error.message}`);
+      if (attempt < retries) {
+        await new Promise((res) => setTimeout(res, delay));
+      }
     }
-  });
+  }
+  throw lastError;
 }
+
 
 function extractLink(title) {
   const urlRegex = /https?:\/\/en\.cppreference\.com\/w\/[^\s]+/g;

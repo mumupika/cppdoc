@@ -36,7 +36,7 @@ function parseText(text: string): LineData[] {
   return text.split("\n").map((line) => {
     const parts = line
       .trimEnd()
-      .replace(/[^\p{L}\p{N}]/gu, " ")
+      .replace(/[,，。""''"".]/gu, " ")
       .split(/\s+/)
       .filter((p) => p.length > 0);
     const tokens = parts
@@ -105,19 +105,21 @@ export function visualizeTextDiff(textA: string, textB: string) {
 
     let hasDifference = false;
 
-    const checkTokens = (tokens: WordToken[] | undefined) => {
+    const checkTokens = (tokens: WordToken[] | undefined, isRowA: boolean) => {
       if (!tokens) return false;
       for (const t of tokens) {
         if (!t.key) continue;
         const countA = freqA.get(t.key) || 0;
         const countB = freqB.get(t.key) || 0;
-        if (countA !== countB) return true;
+        if (isRowA ? countA > countB : countB > countA) {
+          return true;
+        }
       }
       return false;
     };
 
-    const diffA = checkTokens(lineRowA?.tokens);
-    const diffB = checkTokens(lineRowB?.tokens);
+    const diffA = checkTokens(lineRowA?.tokens, true);
+    const diffB = checkTokens(lineRowB?.tokens, false);
 
     const emptyA = !lineRowA || lineRowA.tokens.length === 0;
     const emptyB = !lineRowB || lineRowB.tokens.length === 0;

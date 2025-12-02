@@ -351,3 +351,8 @@ export function visualizeTextDiff(textA: string, textB: string) {
     const buffer = canvas.toBuffer();
     return buffer
 }
+
+
+const svg = visualizeTextDiff("This is a sample text.\nIt has multiple lines.\nSome words are different.", "This is a sample text.\nIt has several lines.\nSome words differ.");
+import { writeFileSync } from 'fs';
+writeFileSync('text-diff.svg', svg);

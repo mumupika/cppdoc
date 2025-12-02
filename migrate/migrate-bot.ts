@@ -1,14 +1,16 @@
 import { Octokit } from "@octokit/rest";
 import { JSDOM } from "jsdom";
 import fs, { readFile } from "fs/promises";
-import path from "path";
+import path, { join } from "path";
 import { fileURLToPath } from "url";
 import { execSync, spawnSync } from "child_process";
+import { visualizeTextDiff } from "./text-diff-visualizer";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const IMGBB_API_KEY = process.env.IMGBB_API_KEY || "";
 const REPO_OWNER = process.env.GITHUB_REPOSITORY_OWNER || "owner";
 const REPO_NAME = process.env.GITHUB_REPOSITORY?.split("/")[1] || "cppdoc";
 const LABEL = "migrate-cppref-page";
@@ -51,7 +53,7 @@ function hasPRReference(title: string): boolean {
   return /\[#\d+\]/.test(title);
 }
 
-async function fetchPageContent(url: string): Promise<{ html: string; title: string; url: string }> {
+async function fetchPageContent(url: string): Promise<{ html: string; title: string; url: string; innerText: string }> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`);
@@ -67,6 +69,7 @@ async function fetchPageContent(url: string): Promise<{ html: string; title: str
     html: contentElement.innerHTML,
     title: headingElement?.textContent?.trim() || "",
     url,
+    innerText: contentElement.textContent?.trim() || "",
   };
 }
 
@@ -196,7 +199,7 @@ ${html}
 }
 
 // https://cppreference.com/w/cpp/comments  => src/content/docs/cpp/comments.mdx
-function getRelativePath(url: string): string {
+function getRelativeMDXPath(url: string): string {
   const match = url.match(/https?:\/\/.*?cppreference\.com\/w\/(.+)\.html$/);
   if (!match) {
     throw new Error(`无法从URL解析路径: ${url}`);
@@ -205,10 +208,19 @@ function getRelativePath(url: string): string {
   return `src/content/docs/${relative}.mdx`;
 }
 
-function getLocalPath(url: string): string {
+function getRelativeHTMLPath(url: string): string {
+  const match = url.match(/https?:\/\/.*?cppreference\.com\/w\/(.+)\.html$/);
+  if (!match) {
+    throw new Error(`无法从URL解析路径: ${url}`);
+  }
+  const relative = match[1]; // "cpp/comments"
+  return `dist/${relative}/index.html`;
+}
+
+function getLocalMDXPath(url: string): string {
   return path.join(
     __dirname,
-    "..", getRelativePath(url)
+    "..", getRelativeMDXPath(url)
   );
 }
 
@@ -223,17 +235,54 @@ description: Auto‑generated from cppreference
   console.log(`写入 ${filePath}`);
 }
 
-async function createPullRequest(issue: { number: number; title: string }, filePath: string, url: string): Promise<number> {
+// curl --location --request POST "https://api.imgbb.com/1/upload?expiration=600&key=YOUR_CLIENT_API_KEY" --form "image=R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+async function uploadImageToImgBB(imageBuffer: Buffer): Promise<string> {
+  const formData = new FormData();
+  formData.append("image", new Blob([new Uint8Array(imageBuffer)]), "diff.svg");
+
+  const response = await fetch(`https://api.imgbb.com/1/upload?expiration=600&key=${IMGBB_API_KEY}`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`ImgBB API error: ${error}`);
+  }
+
+  const data = await response.json() as { data: { url: string } };
+  return data.data.url;
+}
+
+async function createPullRequest(issue: { number: number; title: string }, filePath: string, url: string, originalInnerText: string): Promise<number> {
   const branchName = `migrate/${issue.number}-${Date.now().toString(36)}`;
   const page = url.split("/w/").pop();
   const pageName = page ? page.replace(".html", "") : "unknown";
   const prTitle = `feat: migrate ${pageName} from cppref [#${issue.number}]`;
   const commitMessage = prTitle;
+
+  const newInnerText = await readFile(getRelativeHTMLPath(url), "utf8").then((data) => {
+    const dom = new JSDOM(data);
+    const contentElement = dom.window.document.querySelector("main");
+    return contentElement?.textContent?.trim() || "";
+  }).catch(() => "");
+
+  let imageUrl = null
+  if (originalInnerText && newInnerText) {
+    const svg = visualizeTextDiff(originalInnerText, newInnerText);
+    if (svg) {
+      imageUrl = await uploadImageToImgBB(svg);
+      console.log(`上传文本差异图像到 ImgBB: ${imageUrl}`);
+    }
+  }
+
   const prBody = `> 由 ${MODEL_NAME} 自 ${url} 自动迁移
 >
-> 📝 [编辑此页面](${getRelativePath(url)})
+> 📝 [编辑此页面](${getRelativeMDXPath(url)})
 
 <small>Close #${issue.number}</small>
+
+${imageUrl ? `![Text Diff](${imageUrl})` : "（无文本差异图像）"}
 `;
 
   const { execSync } = await import("child_process");
@@ -322,12 +371,12 @@ async function main() {
       }
 
       console.log(`  获取 ${url}`);
-      const { html, title } = await retry(() => fetchPageContent(url), 3, 2000);
+      const { html, title, innerText } = await retry(() => fetchPageContent(url), 3, 2000);
 
       console.log(`  转换HTML为MDX...`);
       const mdx = await retry(() => convertToMDX(html, title, url), 3, 2000);
 
-      const filePath = getLocalPath(url);
+      const filePath = getLocalMDXPath(url);
       console.log(`  写入 ${filePath}`);
       await writeMDXFile(filePath, mdx, title);
 
@@ -338,7 +387,7 @@ async function main() {
       }
 
       console.log(`  创建PR...`);
-      const prNumber = await createPullRequest(issue, filePath, url);
+      const prNumber = await createPullRequest(issue, filePath, url, innerText);
 
       console.log(`  更新issue...`);
       await updateIssue(issue, prNumber);

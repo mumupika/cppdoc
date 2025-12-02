@@ -9,6 +9,7 @@ import Code from "@astrojs/starlight/components";
 import Behavior from "@components/Behavior.astro";
 import { Decl, DeclDoc } from "@components/decl-doc";
 import { DR, DRList } from "@components/defect-report";
+import { Desc, DescList, DocLink } from '@components/index';
 import Missing from "@components/Missing.astro";
 import { ParamDoc, ParamDocList } from "@components/param-doc";
 import { Revision } from "@components/revision";
@@ -131,8 +132,16 @@ argv[3] == 0
 
 ## References
 
-- C++23 standard (ISO/IEC 14882:2024):
+<DeclDoc style="text-align: center;">
+  <Decl slot="decl">
+    <div style="text-align: center;">
+      <strong>Extended Content</strong>
+    </div>
+  </Decl>
+
+- C++23 standard (ISO/IEC 14882:2024)
   - 6.9.3.1 main function [basic.start.main]
+</DeclDoc>
 
 ## Defect reports
 
@@ -175,3 +184,11 @@ The following behavior-changing defect reports were applied retroactively to pre
     </Fragment>
   </DR>
 </DRList>
+
+## See also
+
+<DescList>
+<Desc>
+  <DocLink slot="item" src="/c/language/main_function"> C documentation</DocLink> for <span> **main function** </span>
+</Desc>
+</DescList>

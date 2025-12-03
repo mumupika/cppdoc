@@ -330,11 +330,12 @@ async function createPullRequest(
 
   const prBody = `> 由 ${MODEL_NAME} 自 ${url} 自动迁移
 >
-> 📝 [编辑此页面](${getRelativeMDXPath(url)})
+> 📝 [编辑此页面](https://github.com/cppdoc-cc/cppdoc/edit/${branchName}/${getRelativeMDXPath(url)})
 
 <small>Close #${issue.number}</small>
 
 ${imageUrl ? `![Text Diff](${imageUrl})` : "（无文本差异图像）"}
+<small>绿色：迁移后词汇出现次数大于迁移前；红色：迁移后词汇出现次数小于迁移前。</small>
 `;
 
   const { execSync } = await import("child_process");

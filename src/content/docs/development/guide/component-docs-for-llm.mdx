@@ -234,7 +234,8 @@ The `DocLink` component renders an inline link to a page associated with a doc k
 
 #### Props
 
-- `src` (required): The doc key (e.g., `"cpp.library.utilities.move"`) or absolute path (e.g., `"/cpp/library/utilities/move"`).
+- `dest` (required): The absolute path (e.g., `"/cpp/library/utilities/move"`).
+- `section` (optional): The `id` of the HTML element to jump to, typically the `id` of heading tags generated from Markdown headings.
 
 #### Slots
 
@@ -245,9 +246,7 @@ The `DocLink` component renders an inline link to a page associated with a doc k
 
 import DocLink from "@components/DocLink.astro";
 
-Check out <DocLink src="cpp.library.utilities.move">this page</DocLink> for more information.
-
-Check out <DocLink src="/cpp/library/utilities/move">this page</DocLink> for more information.
+Check out <DocLink dest="/cpp/library/utilities/move">this page</DocLink> for more information.
 
 
 If the doc key does not exist, the component renders as plain text with missing styling.
@@ -287,6 +286,26 @@ import { CppHeader } from "@components/header";
 ### Header
 
 Base component for `CHeader` and `CppHeader`. Not used directly.
+
+### NamedReq
+
+The `NamedReq` component renders an inline link to a named requirement.
+
+#### Props
+
+- `name` (required): The name of the requirement.
+- `bold` (optional): If `true`, the text renders bold.
+- `displayName` (optional): Custom display text.
+- `nolink` (optional): If `true`, renders as plain text without a link.
+
+#### Usage
+
+
+import NamedReq from "@components/NamedReq.astro"
+
+A <NamedReq name="FunctionObject" /> type is the type of an object
+that can be used on the left of the function call operator.
+
 
 ## Feature Test Macros
 
@@ -383,6 +402,22 @@ The `DR` component renders a single defect report.
 #### Usage
 
 See above.
+
+## Incomplete
+
+The `Incomplete` component marks a section to be incomplete.
+
+#### Props
+
+- `reason` (required): The reason why the section is incomplete.
+
+#### Usage
+
+
+import Incomplete from "@components/Incomplete.astro"
+
+<Incomplete reason="no usage" />
+
 
 ## Missing Content
 

@@ -10,7 +10,8 @@ export interface Props {
 }
 
 const { lang, name, displayName, nolink } = Astro.props;
-const dest = `${lang}.headers.${name}`;
+const langPrefix = lang == "C" ? "/c" : "/cpp";
+const dest = `${langPrefix}/library/headers/${name}`;
 
 const extension = lang === "C" ? ".h" : "";
 const text = displayName ?? `<${name}${extension}>`;

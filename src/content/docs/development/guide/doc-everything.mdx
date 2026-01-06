@@ -12,7 +12,9 @@ import { Desc, DescList } from "@components/desc-list";
 import DocLink from "@components/DocLink.astro";
 import { DR, DRList } from "@components/defect-report";
 import { FeatureTestMacro, FeatureTestMacroValue } from "@components/feature-test-macro";
+import Incomplete from "@components/Incomplete.astro";
 import Missing from "@components/Missing.astro";
+import NamedReq from "@components/NamedReq.astro"
 import { ParamDoc, ParamDocList } from "@components/param-doc";
 import { RevisionBlock } from "@components/revision";
 
@@ -138,6 +140,75 @@ import declDocExample3 from "@src/assets/examples/development/guide/decl-doc-3.m
 <Aside type="tip">
   Don't forget the `autorevSince` attribute on the `DeclDoc` component! Presence of this attribute allows [autorev](./revision#autorev) to automatically show and hide the `DeclDoc` component according to the user-selected revision.
 </Aside>
+
+## Code block inline markers
+
+Special comments can be embedded within Markdown code blocks to specify part of codes has special meanings. Enable this feature by adding `cxx-mark` after the language name of code block's opening fence:
+
+import cxxMarkExample1 from "@src/assets/examples/development/guide/cxx-mark-1.mdx?raw";
+
+<Code code={cxxMarkExample1} lang="mdx" />
+
+<Card title="Preview">
+  ```cpp cxx-mark
+  // syntax of for statement
+  /*$s:attr*//*$opt*/ for ( /*$s:init-statement*/ /*$s:condition*//*$opt*/ ; /*$s:expression*//*$opt*/ ) /*$s:statement*/
+
+  // exposition only alias template of conditionally const type
+  template< bool Const, class T >
+  using /*$e:maybe-const*/ = std::conditional_t<Const, const T, T>;
+  ```
+</Card>
+
+Three kinds of markers are supported:
+
+<DeclDoc>
+  <Decl slot="decl">
+    ```
+    /*$s:something*/
+    ```
+  </Decl>
+
+  Marks part of code to be a syntax notation.
+
+  Rendered as:
+
+  ```cpp cxx-mark
+  /*$s:something*/
+  ```
+</DeclDoc>
+
+<DeclDoc>
+  <Decl slot="decl">
+    ```
+    /*$e:something*/
+    ```
+  </Decl>
+
+  Marks part of code to be exposition only.
+
+  Rendered as:
+
+  ```cpp cxx-mark
+  /*$e:something*/
+  ```
+</DeclDoc>
+
+<DeclDoc>
+  <Decl slot="decl">
+    ```
+    something/*$opt*/
+    ```
+  </Decl>
+
+  Mark the previous part of code (often a syntax notation) to be optional.
+
+  Rendered as:
+
+  ```cpp cxx-mark
+  something/*$opt*/
+  ```
+</DeclDoc>
 
 ## Description list
 
@@ -271,47 +342,44 @@ The `ParamDocList` component can be used to document function or template parame
 
 ## Links
 
-### Link by Doc Keys
+### Link to Another CppDoc Page
 
-Each page could optionally associate itself with zero or more _doc keys_ through its frontmatter.
-
-```mdx {4}
----
-title: std::move
-cppdoc:
-  keys: ["cpp.library.utilities.move"]
-  cppdoc:
-    lang: C++
-    since: C++11
----
-```
-
-<Aside type="caution">
-  While a page can have multiple doc keys, each unique doc key can only be associated to at most one page.
-</Aside>
-
-The `DocLink` component allows you to render an inline link to the page associated with the specified doc key. You can also specify the destination page by its absolute path.
+The `DocLink` component allows you to render an inline link to a specified CppDoc page. The path to the target page must be an absolute path.
 
 ```mdx
 import DocLink from "@components/DocLink.astro";
 
 Check out
-<DocLink src="cpp.library.utilities.move">this page</DocLink>
-for more information about `std::move`.
-
-Check out
-<DocLink src="/cpp/library/utilities/move">this page</DocLink>
+<DocLink dest="/cpp/library/utilities/move">this page</DocLink>
 for more information about `std::move`.
 ```
 
 <Card title="Preview">
-  Check out <DocLink src="cpp.library.utilities.move">this page</DocLink> for detailed information about `std::move`.
+  Check out <DocLink dest="/cpp/library/utilities/move">this page</DocLink> for more information about `std::move`.
+</Card>
 
-  Check out <DocLink src="/cpp/library/utilities/move">this page</DocLink> for more information about `std::move`.
+By setting the `section` attribute, you can link to a specific section (or any HTML elements with corresponding `id` attribute) of a CppDoc page.
+
+```mdx
+import DocLink from "@components/DocLink.astro";
+
+<DocLink
+  dest="/cpp/library/standard_library"
+  section="standard-library-hardening">Standard library hardening</DocLink>
+allows turning some instances of undefined behavior in the standard library
+into a contract violation.
+```
+
+<Card title="Preview">
+  <DocLink
+    dest="/cpp/library/standard_library"
+    section="standard-library-hardening">Standard library hardening</DocLink>
+  allows turning some instances of undefined behavior in the standard library
+  into a contract violation.
 </Card>
 
 <Aside type="tip">
-  If the specified doc key does not exist yet, the `DocLink` component will render as a plain text span without a link.
+  If the specified page does not exist yet, the `DocLink` component will render as a plain text span without a link.
 </Aside>
 
 ### Link to Header
@@ -336,6 +404,40 @@ Entities in it can be used in a C++ program by including the header
 
 <Aside type="tip">
   If documentation for the specified header does not exist yet, the `CHeader` and the `CppHeader` component will render the header name as plain text without a link.
+</Aside>
+
+### Link to Named Requirement
+
+The `NamedReq` component renders an inline link to the documentation page of a named requirement.
+
+```mdx
+import NamedReq from "@components/NamedReq.astro";
+
+A <NamedReq name="FunctionObject" /> type is the type of an object
+that can be used on the left of the function call operator.
+```
+
+<Card title="Preview">
+  A <NamedReq name="FunctionObject" /> type is the type of an object
+  that can be used on the left of the function call operator.
+</Card>
+
+You can set the `bold` attribute to `true`, to make the requirement name appear in bold.
+
+```mdx
+import NamedReq from "@components/NamedReq.astro";
+
+A <NamedReq name="FunctionObject" bold /> type is the type of an object
+that can be used on the left of the function call operator.
+```
+
+<Card title="Preview">
+  A <NamedReq name="FunctionObject" bold /> type is the type of an object
+  that can be used on the left of the function call operator.
+</Card>
+
+<Aside type="tip">
+  If documentation for the specified named requirement does not exist yet, the `NamedReq` component will render the requirement name as plain text without a link.
 </Aside>
 
 ## Feature Test Macros
@@ -435,6 +537,20 @@ import { DR, DRList } from "@components/defect-report";
       </Fragment>
     </DR>
   </DRList>
+</Card>
+
+## Incomplete Sections
+
+The `Incomplete` component marks a section to be incomplete.
+
+```mdx
+import { Incomplete } from "@components/Incomplete.astro";
+
+<Incomplete reason="more examples" />
+```
+
+<Card title="Preview">
+  <Incomplete reason="more examples" />
 </Card>
 
 ## Missing Content
